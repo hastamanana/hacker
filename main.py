@@ -1,86 +1,109 @@
-import random 
+import random
 import sys
 import logging
 
 from config import ATTEMPTS, WORDS, LENGTH_OF_PSWD
 
 
-GARBAGE_CHARS: str = '~!@#$%^&*()_+-={}[]|;:,.<>?/'
+GARBAGE_CHARS: str = "~!@#$%^&*()_+-={}[]|;:,.<>?/"
 
 
-def get_words_from_txt_file(filename='seven_letter_words.txt') -> list[str]:
-    print(LENGTH_OF_PSWD)
+def get_words_from_file(
+        filename: str = "seven_letter_words.txt",
+        encoding: str = "UTF-8"
+) -> list[str]:
+    logging.debug(LENGTH_OF_PSWD)
     try:
-        with open(filename) as words_list_file:
-            if LENGTH_OF_PSWD != 7:
-                return [curr_word.strip().upper() for curr_word in words_list_file.readlines() if len(curr_word.strip()) == LENGTH_OF_PSWD + 1]
-            return [curr_word.strip().upper() for curr_word in words_list_file.readlines() if len(curr_word.strip()) == LENGTH_OF_PSWD]
+        with open(filename, mode="r", encoding=encoding) as file:
+            return [
+                curr_word.strip().upper()
+                for curr_word in file.readlines()
+            ]
     except FileNotFoundError:
         logging.error("Файл не найден!")
         sys.exit()
-    
 
-def get_secret_pswd(words) -> str:
-    """
-    Возвращает загаданное слово
-    """
+
+def get_secret_password(words: list[str]) -> str:
+    """Возвращает загаданное слово."""
     return random.choice(words)
 
-def get_twelve_words(words_from_file) -> list[str]:
+
+def fill_blocklist_words(all_words: list[str], blocklist_words: list[str]):
     """
-    Возвращает список из 12 слов, которые могут быть паролем.
+    Добавляет случайные слова, чтобы получить 12 слов в общей сложности.
+    """
+    while len(blocklist_words) < WORDS:
+        blocklist_words.append(get_one_word_except_blocklist(all_words, blocklist_words))
+
+
+def find_similar_words(
+        words_count: int,
+        matches_count: int,
+        secret_password: str,
+        all_words: list[str],
+        temp_words: list[str],
+        blocklist_words: list[str],
+        attempts: int = 500,
+        **kwargs
+) -> None:
+    is_equal_mode: bool = kwargs.get("eq", False)
+
+    for _ in range(attempts):
+        if len(temp_words) == words_count:
+            blocklist_words.extend(temp_words)
+            temp_words.clear()
+            break  # Нашли words_count слов, выходим из цикла.
+
+        random_word: str = get_one_word_except_blocklist(
+            all_words,
+            temp_words,
+            blocklist_words
+        )
+
+        count: int = get_num_matching_letters(secret_password, random_word)
+        if is_equal_mode:
+            if count == matches_count:
+                temp_words.append(random_word)
+        else:
+            if count != matches_count:
+                temp_words.append(random_word)
+
+
+def get_password_words(all_words: list[str], length: int = 7) -> list[str]:
+    """
+    Возвращает список слов, которые могут быть паролем.
 
     Секретный пароль будет первым словом в списке.
     Чтобы игра была честной, мы стараемся включить слова с разным
     количеством совпадающих букв с секретным словом.
     """
-    
-    secret_password: str = get_secret_pswd(words_from_file)
-    words:list[str] = [secret_password]
+    secret_password: str = get_secret_password(all_words)
+    blocklist_words: list[str] = [secret_password]
     temp_words: list[str] = []
 
-    # Находим еще два слова; они не имеют совпадающих букв.
     while len(temp_words) != 2:
-        random_word: str = get_one_word_except_blocklist(words_from_file, temp_words, words)
+        random_word: str = get_one_word_except_blocklist(
+            all_words,
+            temp_words,
+            blocklist_words
+        )
         if get_num_matching_letters(secret_password, random_word) == 0:
             temp_words.append(random_word)
 
-    words.extend(temp_words)
+    blocklist_words.extend(temp_words)
     temp_words.clear()
 
-    # Находим два слова, которые имеют 3 совпадающие буквы
-    # (но сдаемся после 500 попыток, если не можем найти достаточно).
-    for i in range(500):
-        if len(temp_words) == 2:
-            words.extend(temp_words)
-            temp_words.clear()
-            break  # Нашли 5 слов, выходим из цикла.
+    find_similar_words(2, 3, secret_password, all_words, temp_words, blocklist_words, eq=True)
+    find_similar_words(7, 0, secret_password, all_words, temp_words, blocklist_words)
 
-        random_word: str = get_one_word_except_blocklist(words_from_file, temp_words, words)
-        if get_num_matching_letters(secret_password, random_word) == 3:
-            temp_words.append(random_word)
+    fill_blocklist_words(all_words, blocklist_words)
 
-    # Находим хотя бы семь слов, которые имеют хотя бы одну совпадающую букву
-    # (но сдаемся после 500 попыток, если не можем найти достаточно).
-    for i in range(500):
-        if len(temp_words) == 7:
-            words.extend(temp_words)
-            temp_words.clear()
-            break  # Нашли 7 или более слов, выходим из цикла.
+    return blocklist_words
 
-        random_word: str = get_one_word_except_blocklist(words_from_file, temp_words, words)
-        if get_num_matching_letters(secret_password, random_word) != 0:
-            temp_words.append(random_word)
+# TODO: Продолжим здесь.
 
-    # Добавляем случайные слова, чтобы получить 12 слов в общей сложности.
-    while len(words) < WORDS:
-        random_word: str = get_one_word_except_blocklist(words_from_file, words)
-        words.append(random_word)
-
-    return words
-
-
-def get_one_word_except_blocklist(words: list[str], temp: list[str], blocklist: list[str]=None) -> str: 
+def get_one_word_except_blocklist(words: list[str], temp: list[str], blocklist: list[str]=None) -> str:
     """Возвращает случайное слово из WORDS, которого нет в blocklist."""
     if blocklist is None:
         blocklist = []
@@ -93,15 +116,16 @@ def get_one_word_except_blocklist(words: list[str], temp: list[str], blocklist: 
             return random_word
 
 
-def get_num_matching_letters(word1: str, word2: str) -> int:
+def get_num_matching_letters(word1: str, word2: str) -> int | None:
     """
     Возвращает количество совпадающих букв 
     в этих двух словах на одинковых позицих.
     """
-    matches: int = 0
-    
     if len(word1) != len(word2):
-        return
+        return None
+
+    matches: int = 0
+
     for i in range(len(word1)):
         if word1[i] == word2[i]:
             matches += 1
@@ -109,7 +133,7 @@ def get_num_matching_letters(word1: str, word2: str) -> int:
     return matches
 
 
-def return_computer_memory_str(words) -> str: 
+def return_computer_memory_str(words) -> str:
     """
     Возвращает строку, представляющую "память компьютера".
     """
@@ -165,7 +189,7 @@ def get_from_user_guess_pswd(words, tries) -> None:
     """
     random_word_1, random_word_2 = random.sample(words, 2)
 
-    
+
     print(f'\nВведите пароль: (осталось {tries} попыток)\n'
           'Для выхода из программы нажмите ctrl+c')
     guess: str = input('> ').upper()
@@ -177,12 +201,11 @@ def get_from_user_guess_pswd(words, tries) -> None:
         return guess
 
 
-
 def main() -> None:
     """
     Запуск одной игры "Взлом".
     """
-    
+
     print(f"{"Мини-игра 'h@ck3r'":^60}\n")
     print('''Найдите пароль в памяти компьютера. Вам даются подсказки после
 каждой попытки. Например, если секретный пароль – MONITOR, а игрок
@@ -192,17 +215,17 @@ def main() -> None:
 
     input('Нажмите Enter, чтобы начать...')
 
-    if not get_words_from_txt_file():
+    if not get_words_from_file():
         return False
-    all_words = get_words_from_txt_file()
-    words_for_game = get_twelve_words(all_words)
+    all_words = get_words_from_file()
+    words_for_game = get_password_words(all_words)
     secret_pswd = words_for_game[0]
     res = return_computer_memory_str(words_for_game)
     print(res)
 
     # я сделал через while, но как я могу сделать такую же логику через for и уменьшение попыток?
     attempt = ATTEMPTS
-    while attempt > 0:    
+    while attempt > 0:
         try:
             player_serve = get_from_user_guess_pswd(words_for_game, attempt)
             if player_serve == secret_pswd:
@@ -220,7 +243,7 @@ def main() -> None:
     else:
         print(f'Попытки закончились. Секретный пароль был {secret_pswd}.')
         logging.info(f"Пользователь не взломал систему!")
-        
+
 
 
 if __name__ == '__main__':
