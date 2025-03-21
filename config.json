@@ -1,27 +1,27 @@
-{
-    "very_easy": {
-        "length_of_pswd": 7,
-        "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
-        "attempts": 4
-    },
-    "easy": {
-        "length_of_pswd": 7,
-        "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
-        "attempts": 4
-    },
-    "medium": {
-        "length_of_pswd": 7,
-        "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
-        "attempts": 4
-    },
-    "hard": {
-        "length_of_pswd": 7,
-        "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
-        "attempts": 4
-    },
-    "very_hard": {
-        "length_of_pswd": 7,
-        "words": [13],
-        "attempts": 4
-    }
-}
+{ 
+     "very_easy": {
+         "length_of_pswd": [4,5],
+         "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+         "attempts": 4
+     },
+     "easy": {
+         "length_of_pswd": [6,7],
+         "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+         "attempts": 4
+     },
+     "medium": {
+         "length_of_pswd": [8,9],
+         "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+         "attempts": 4
+     },
+     "hard": {
+         "length_of_pswd": [10,11],
+         "words": [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+         "attempts": 4
+     },
+     "very_hard": {
+         "length_of_pswd": 12,
+         "words": 13,
+         "attempts": 4
+     }
+ }

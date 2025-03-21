@@ -9,12 +9,15 @@ GARBAGE_CHARS: str = '~!@#$%^&*()_+-={}[]|;:,.<>?/'
 
 
 def get_words_from_txt_file(filename='seven_letter_words.txt') -> list[str]:
+    print(LENGTH_OF_PSWD)
     try:
         with open(filename) as words_list_file:
-            return [i.strip().upper() for i in words_list_file.readlines() if len(i) == 1 + LENGTH_OF_PSWD]
+            if LENGTH_OF_PSWD != 7:
+                return [curr_word.strip().upper() for curr_word in words_list_file.readlines() if len(curr_word.strip()) == LENGTH_OF_PSWD + 1]
+            return [curr_word.strip().upper() for curr_word in words_list_file.readlines() if len(curr_word.strip()) == LENGTH_OF_PSWD]
     except FileNotFoundError:
-        print('Файл не найден!')
-        return False
+        logging.error("Файл не найден!")
+        sys.exit()
     
 
 def get_secret_pswd(words) -> str:
